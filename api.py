@@ -83,11 +83,16 @@ def gendevice():
         filehandle.write('%s\n' % secondline)
         for vuln in vulnlist:
             nmbr = vulnlist.index(vuln)
-            newdev = "<Device name=\"Webcrawler\" \"" + str(nmbr) + "\"" + "\" domain=" + vuln + "port=\"37777\" " \
-                                                                                                 "username=\"admin\" " \
-                                                                                                 "password=\"admin\" " \
-                                                                                                 "protocol=\"1\" " \
-                                                                                                 "connect=\"0\" /> "
+            newdev = "<Device name=\"Webcrawler" + str(nmbr) + "\"" + " domain=" + "\"" + vuln + "\"" + " port=\"37777" \
+                                                                                                        "\" " \
+                                                                                                        "username" \
+                                                                                                        "=\"admin\" " \
+                                                                                                        "password" \
+                                                                                                        "=\"admin\" " \
+                                                                                                        "protocol=\"1" \
+                                                                                                        "\" " \
+                                                                                                        "connect=\"0" \
+                                                                                                        "\" /> "
             filehandle.write('%s\n' % newdev)
         filehandle.write('%s\n' % lastline)
 
