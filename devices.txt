@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DeviceManager version="2.0">
+<Device name="Webcrawler" "0"NL" domain=80.151.136.116port="37777" username="admin" password="admin" protocol="1" connect="0" /> 
+</DeviceManager>
