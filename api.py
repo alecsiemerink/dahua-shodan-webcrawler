@@ -14,7 +14,8 @@ vulnlist = []
 parser = argparse.ArgumentParser(description='Dahua Webcrawler / Vulnerability tester')
 parser.add_argument("--c", default=100, type=int, help="Amount of hosts to be audited. Integer input only")
 args = parser.parse_args()
-amount = args.a
+am = args.c
+
 
 # Make pretty colors :)
 def prRed(skk): print("\033[91m {}\033[00m".format(skk))
@@ -106,5 +107,5 @@ def run(amount, query):
     print(save())
 
 
-print(run(amount, "Dahua \"server: Dahua Rtsp Server\""))
+print(run(am, "Dahua \"server: Dahua Rtsp Server\""))
 gendevice()
