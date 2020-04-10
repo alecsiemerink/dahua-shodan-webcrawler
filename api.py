@@ -1,5 +1,6 @@
 import requests
 import shodan
+import argparse
 from pymongo import MongoClient
 from secrets import *
 
@@ -10,6 +11,10 @@ db = client.addresses
 iplist = []
 vulnlist = []
 
+parser = argparse.ArgumentParser(description='Dahua Webcrawler / Vulnerability tester')
+parser.add_argument("--c", default=100, type=int, help="Amount of hosts to be audited. Integer input only")
+args = parser.parse_args()
+amount = args.a
 
 # Make pretty colors :)
 def prRed(skk): print("\033[91m {}\033[00m".format(skk))
@@ -101,5 +106,5 @@ def run(amount, query):
     print(save())
 
 
-print(run(50, "Dahua \"server: Dahua Rtsp Server\""))
+print(run(amount, "Dahua \"server: Dahua Rtsp Server\""))
 gendevice()
