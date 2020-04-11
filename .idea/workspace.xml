@@ -3,8 +3,11 @@
   <component name="ChangeListManager">
     <list default="true" id="6d85c28d-b5a1-4212-9f5c-00334ffd6bf1" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/crawler.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/devices.txt" beforeDir="false" afterPath="$PROJECT_DIR$/devices.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/list.txt" beforeDir="false" afterPath="$PROJECT_DIR$/list.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secrets.py" beforeDir="false" afterPath="$PROJECT_DIR$/secrets.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,7 +38,7 @@
     <property name="settings.editor.selected.configurable" value="Errors" />
   </component>
   <component name="RunManager">
-    <configuration name="api" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="crawler" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="dahua_webcrawler" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -47,7 +50,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/api.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/crawler.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -58,7 +61,7 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.api" />
+        <item itemvalue="Python.crawler" />
       </list>
     </recent_temporary>
   </component>
@@ -112,9 +115,9 @@
       <screen x="0" y="27" width="1920" height="1013" />
     </state>
     <state x="464" y="168" width="992" height="737" key="SettingsEditor/0.27.1920.1013@0.27.1920.1013" timestamp="1586549384894" />
-    <state x="623" y="249" width="672" height="678" key="search.everywhere.popup" timestamp="1586267314665">
+    <state x="623" y="249" width="672" height="678" key="search.everywhere.popup" timestamp="1586637117778">
       <screen x="0" y="27" width="1920" height="1013" />
     </state>
-    <state x="623" y="249" width="672" height="678" key="search.everywhere.popup/0.27.1920.1013@0.27.1920.1013" timestamp="1586267314665" />
+    <state x="623" y="249" width="672" height="678" key="search.everywhere.popup/0.27.1920.1013@0.27.1920.1013" timestamp="1586637117778" />
   </component>
 </project>
