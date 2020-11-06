@@ -102,7 +102,6 @@ def percentage(vuln, total):
         return (vuln / total) * 100
     except ZeroDivisionError:
         return 0
-    return percent
 
 
 def run(amount, query):
@@ -124,6 +123,6 @@ def run(amount, query):
     return vulnlist
     print(save())
 
-
-print(run(am, "Dahua \"server: Dahua Rtsp Server\""))
-gendevice()
+if __name__ == "__main__":
+    print(run(am, "Dahua \"server: Dahua Rtsp Server\""))
+    gendevice()
